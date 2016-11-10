@@ -1,6 +1,5 @@
-<<<<<<< HEAD
 *.mp4
-=======
-input1.mp4
-input2.mp4
->>>>>>> 0ac379a9243402238b7fd3442d8461eeec0e733f
+CMakeFiles
+CMakeCache.txt
+cmake_install.cmake
+Makefile
