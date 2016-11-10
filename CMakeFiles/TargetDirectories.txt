@@ -1,3 +1,0 @@
-/home/kyle/Desktop/Final Year Project/CMakeFiles/edit_cache.dir
-/home/kyle/Desktop/Final Year Project/CMakeFiles/rebuild_cache.dir
-/home/kyle/Desktop/Final Year Project/CMakeFiles/out.dir
