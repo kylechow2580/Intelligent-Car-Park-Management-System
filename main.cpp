@@ -26,7 +26,7 @@ int windowHeight = 9 * windowRatio;
 int pause = 0;
 int lineX = 10;
 int lineY = 270;
-int option = 1;
+int option = 2;
 int optionNum = 3;
 
 int large = 6000;
@@ -141,80 +141,87 @@ void initial()
 
 void showContours(Mat frame, vector< vector<Point> > contours)
 {
-    bool found = false; // For finding the biggest one in the video only
     int i;
+    int biggestID = -1;
+    int biggestArea = 1000;
+    
     for(i=0;i<contours.size();i++)
     {
+        // To ensure the object in the specfic area
+        double objectArea = contourArea(contours[i], false);
+        
+        if(objectArea > biggestArea)
+        {
+            biggestArea = objectArea;
+            biggestID = i;
+        }
+        else
+        {
+            continue;
+        }
         int j;
         bool valid = true;
+        int minimunX = windowWidth;
+        int maximumY = 0;
         for (j=0;j<contours[i].size();j++)
         {
-            if(contours[i][j].x <= lineX)
+            if(contours[i][j].x < minimunX)
             {
-                valid = false;
-                break;
+                minimunX = contours[i][j].x;
+            }
+            if(contours[i][j].y > maximumY)
+            {
+                maximumY = contours[i][j].y;
             }
         }
-
-
-        if(!found && valid)
+        if(minimunX < lineX && maximumY > lineY)
         {
-            double objectArea = contourArea(contours[i], false); // Find the area of contour
-            if(objectArea > 1000)
-            {
-                Rect bounding_rect = boundingRect(contours[i]);
-                // drawContours(subImg, contours, i, Scalar(0,255,0));
-                int minimunX = windowWidth;
-                int maximumY = 0;
-                for (j=0;j<contours[i].size();j++)
-                {
-                    if(contours[i][j].x < minimunX)
-                    {
-                        minimunX = contours[i][j].x;
-                    }
-                    if(contours[i][j].y > maximumY)
-                    {
-                        maximumY = contours[i][j].y;
-                    }
-                }
+            valid = false;
+        }
 
-
-                if(minimunX >= lineX && maximumY < lineY)
-                {
-                    if(minimunX <= lineX + 30)
-                    {
-                        Mat subImg(frame,bounding_rect);
-                        resize(subImg,subImg,Size(16*20,9*20));
-                        stringstream filename;
-                        filename << "SubStracted/sub";
-                        filename << SubStractedNum;
-                        filename << ".jpg";
-                        // string fileName = filename.str();
-                        // fout << fileName << " 1 0 0 " << 16*20 << " " << 9*20 << endl;
-                        // SubStractedNum++;
-                        imwrite(filename.str(), subImg);
-                        imshow(SUBSTRACTED_IMG,subImg);
-                    }
-
-                    if(objectArea > large)
-                    {
-                        rectangle(frame, bounding_rect, Scalar(0,0,255), 1, 8, 0);
-                        //Red
-                    }
-                    else if(objectArea > small && objectArea < middle)
-                    {
-                        rectangle(frame, bounding_rect, Scalar(255,0,0), 1, 8, 0);
-                        //Blue
-                    }
-                    else if(objectArea > 1000 && objectArea < small)
-                    {
-                        rectangle(frame, bounding_rect, Scalar(0,255,0), 1, 8, 0);
-                        //Green
-                    }
-                    // found = true; 
-                }
-
-            }   
+    }
+    cout << "biggestID: " << biggestID << " area: " << biggestArea << endl;
+    if(biggestID != -1)
+    {
+        Rect bounding_rect = boundingRect(contours[biggestID]);
+        double objectArea = contourArea(contours[biggestID], false);
+        cout << objectArea << endl;
+        if(objectArea > large)
+        {
+            rectangle(frame, bounding_rect, Scalar(0,0,255), 1, 8, 0);
+            //Red
+        }
+        else if(objectArea > small && objectArea < middle)
+        {
+            rectangle(frame, bounding_rect, Scalar(255,0,0), 1, 8, 0);
+            //Blue
+        }
+        else if(objectArea > 1000 && objectArea < small)
+        {
+            rectangle(frame, bounding_rect, Scalar(0,255,0), 1, 8, 0);
+            //Green
         }
     }
+        
+    // drawContours(subImg, contours, i, Scalar(0,255,0));
+
+
+    // if(minimunX <= lineX + 30)
+    // {
+    //     Mat subImg(frame,bounding_rect);
+    //     resize(subImg,subImg,Size(16*20,9*20));
+    //     stringstream filename;
+    //     filename << "SubStracted/sub";
+    //     filename << SubStractedNum;
+    //     filename << ".jpg";
+    //     // string fileName = filename.str();
+    //     // fout << fileName << " 1 0 0 " << 16*20 << " " << 9*20 << endl;
+    //     // SubStractedNum++;
+    //     imwrite(filename.str(), subImg);
+    //     imshow(SUBSTRACTED_IMG,subImg);
+    // }
+
+    
+
+    
 }
