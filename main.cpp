@@ -12,32 +12,36 @@ using namespace cv;
 
 //0002 , 10, 260
 
-string input_name = "Input/input2.mp4";
+string input_name = "Input/MOV_0002.mp4";
 string MAIN_WINDOW = "Main Output";
 string INTERMEDIATE_WINDOW = "Intermediate Step";
 string SUBSTRACTED_IMG = "Sub Image";
 
+//Windows parameter
 ofstream fout;
 int key = 0;
-int windowRatio = 30;
+int windowRatio = 40;
 int windowWidth = 16 * windowRatio;
 int windowHeight = 9 * windowRatio;
-
 int pause = 0;
-int lineX = 10;
-int lineY = 270;
 int option = 2;
 int optionNum = 3;
 
+//Object Size retangle
 int large = 10000;
 int middle = 5000;
 int small = 2000;
 
-// Background substraction parameter
+//Interested Area
+Rect InterestedArea(40,100,500,250);
+
+
+//Background substraction parameter
 int history = 500;
-double varThreshold = 80;
+double varThreshold = 255;
 bool detectShadows = true;
-bool learningRate = true;
+bool learningRate = false;
+
 
 int SubStractedNum = 1;
 Size size(windowWidth,windowHeight);
@@ -97,9 +101,13 @@ int main(int argc, char** argv)
             showContours(frame,contours);
             
 
-            line(frame, Point(lineX,0), Point(lineX,windowHeight), Scalar(255,155,128),2);
-            line(frame, Point(0,lineY), Point(windowWidth,lineY), Scalar(255,155,128),2);
+            // line(frame, Point(lineX,0), Point(lineX,windowHeight), Scalar(255,155,128),2);
+            // line(frame, Point(0,lineY), Point(windowWidth,lineY), Scalar(255,155,128),2);
+            rectangle(frame, InterestedArea, Scalar(200,255,145), 3, 8, 0);
             imshow(MAIN_WINDOW, frame);
+
+            Mat subImg(frame,InterestedArea);
+            imshow(SUBSTRACTED_IMG,subImg);
         }
         switch(option)
             {
@@ -130,14 +138,14 @@ void initial()
 {
     namedWindow(MAIN_WINDOW, WINDOW_AUTOSIZE );
     createTrackbar("Pause", MAIN_WINDOW, &pause, 1);
-    createTrackbar("LineX", MAIN_WINDOW, &lineX, windowWidth);
-    createTrackbar("LineY", MAIN_WINDOW, &lineY, windowHeight);
+    // createTrackbar("LineX", MAIN_WINDOW, &lineX, windowWidth);
+    // createTrackbar("LineY", MAIN_WINDOW, &lineY, windowHeight);
     moveWindow(MAIN_WINDOW, 0, 0);
     
     
     namedWindow(INTERMEDIATE_WINDOW, WINDOW_AUTOSIZE );
     createTrackbar("Option", INTERMEDIATE_WINDOW, &option, optionNum);
-    moveWindow(INTERMEDIATE_WINDOW, 600, 0);
+    moveWindow(INTERMEDIATE_WINDOW, windowWidth+60, 0);
 
     namedWindow(SUBSTRACTED_IMG, 1);
     moveWindow(SUBSTRACTED_IMG, 0, 600);
@@ -170,11 +178,8 @@ void showContours(Mat frame, vector< vector<Point> > contours)
                     maximumY = contours[i][j].y;
                 }
             }
-            if(minimunX > lineX && maximumY < lineY)
-            {
-                biggestArea = objectArea;
-                biggestID = i;
-            }
+            biggestArea = objectArea;
+            biggestID = i;
         }
         else
         {
@@ -204,9 +209,9 @@ void showContours(Mat frame, vector< vector<Point> > contours)
             //Green
         }
 
-        Mat subImg(frame,bounding_rect);
-        resize(subImg,subImg,Size(16*20,9*20));
-        imshow(SUBSTRACTED_IMG,subImg);
+        // Mat subImg(frame,bounding_rect);
+        // resize(subImg,subImg,Size(16*20,9*20));
+        // imshow(SUBSTRACTED_IMG,subImg);
     }
         
     // drawContours(subImg, contours, i, Scalar(0,255,0));
