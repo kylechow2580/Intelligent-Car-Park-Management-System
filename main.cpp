@@ -12,7 +12,7 @@ using namespace cv;
 
 //0002 , 10, 260
 
-string input_name = "Input/MOV_0002.mp4";
+string input_name = "Input/input2.mp4";
 string MAIN_WINDOW = "Main Output";
 string INTERMEDIATE_WINDOW = "Intermediate Step";
 string SUBSTRACTED_IMG = "Sub Image";
@@ -29,9 +29,15 @@ int lineY = 270;
 int option = 2;
 int optionNum = 3;
 
-int large = 6000;
-int middle = 4000;
+int large = 10000;
+int middle = 5000;
 int small = 2000;
+
+// Background substraction parameter
+int history = 500;
+double varThreshold = 80;
+bool detectShadows = true;
+bool learningRate = true;
 
 int SubStractedNum = 1;
 Size size(windowWidth,windowHeight);
@@ -52,11 +58,9 @@ int main(int argc, char** argv)
     
     Mat frame, fgMOG2MaskImg, fgMOG2Img, bgMOG2Img, contoursImg;
     Ptr<BackgroundSubtractor> pMOG2;
-    int history = 500;
-    double varThreshold = 80;
-    bool detectShadows = true;
+
     pMOG2 = createBackgroundSubtractorMOG2(history, varThreshold, detectShadows);
-    bool learningRate = false;
+    
     //The value between 0 and 1 that indicates how fast the background model is learnt.
     //Negative parameter value makes the algorithm to use some automatically chosen learning rate.
     //0 means that the background model is not updated at all,
@@ -152,34 +156,32 @@ void showContours(Mat frame, vector< vector<Point> > contours)
         
         if(objectArea > biggestArea)
         {
-            biggestArea = objectArea;
-            biggestID = i;
+            int j;
+            int minimunX = windowWidth;
+            int maximumY = 0;
+            for (j=0;j<contours[i].size();j++)
+            {
+                if(contours[i][j].x < minimunX)
+                {
+                    minimunX = contours[i][j].x;
+                }
+                if(contours[i][j].y > maximumY)
+                {
+                    maximumY = contours[i][j].y;
+                }
+            }
+            if(minimunX > lineX && maximumY < lineY)
+            {
+                biggestArea = objectArea;
+                biggestID = i;
+            }
         }
         else
         {
             continue;
         }
-        int j;
-        bool valid = true;
-        int minimunX = windowWidth;
-        int maximumY = 0;
-        for (j=0;j<contours[i].size();j++)
-        {
-            if(contours[i][j].x < minimunX)
-            {
-                minimunX = contours[i][j].x;
-            }
-            if(contours[i][j].y > maximumY)
-            {
-                maximumY = contours[i][j].y;
-            }
-        }
-        if(minimunX < lineX && maximumY > lineY)
-        {
-            valid = false;
-        }
-
     }
+
     cout << "biggestID: " << biggestID << " area: " << biggestArea << endl;
     if(biggestID != -1)
     {
@@ -201,6 +203,10 @@ void showContours(Mat frame, vector< vector<Point> > contours)
             rectangle(frame, bounding_rect, Scalar(0,255,0), 1, 8, 0);
             //Green
         }
+
+        Mat subImg(frame,bounding_rect);
+        resize(subImg,subImg,Size(16*20,9*20));
+        imshow(SUBSTRACTED_IMG,subImg);
     }
         
     // drawContours(subImg, contours, i, Scalar(0,255,0));
@@ -220,8 +226,4 @@ void showContours(Mat frame, vector< vector<Point> > contours)
     //     imwrite(filename.str(), subImg);
     //     imshow(SUBSTRACTED_IMG,subImg);
     // }
-
-    
-
-    
 }
