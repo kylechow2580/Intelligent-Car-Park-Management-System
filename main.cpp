@@ -28,11 +28,16 @@ int option = 2;
 int optionNum = 3;
 int fullview = 0;
 
+
+//Object Record
+int frameObjectArea[10];
+
 //Object Size retangle
-int limit = 70000;
+int upperLimit = 70000;
 int large = 60000;
 int middle = 40000;
 int small = 20000;
+int lowerLimit = 10000;
 
 //Interested Area
 Rect InterestedArea(10,100,500,250);
@@ -45,8 +50,8 @@ bool detectShadows = true;
 bool learningRate = false;
 
 
+// File output parameter
 int SubStractedNum = 1;
-Size size(windowWidth,windowHeight);
 
 
 void initial(); //Function to intialize the windows postion and setting
@@ -84,19 +89,18 @@ int main(int argc, char** argv)
 
         if(pause == 0)
         {
+            // Video to frame part
             cap >> frame;
             if(frame.empty())
             {
                 cout << "Video Ended." << endl;
                 break;
             }
+            resize(frame,frame,Size(windowWidth,windowHeight));
 
 
-            resize(frame,frame,size);
+            // Interested Area part
             Mat InterestedImg(frame,InterestedArea);
-            
-            
-            
             Mat inputFrame;
             if(fullview == 1)
             {
@@ -111,29 +115,28 @@ int main(int argc, char** argv)
 
             //update the model
             pMOG2->apply(inputFrame, fgMOG2MaskImg, learningRate ? -1 : 0);
-
-            
             fgMOG2Img = Scalar::all(0);
             inputFrame.copyTo(fgMOG2Img, fgMOG2MaskImg);          
             pMOG2->getBackgroundImage(bgMOG2Img);
+
 
             // Find the contours in the image
             contoursImg = fgMOG2MaskImg.clone();
             findContours(contoursImg, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);        
             showContours(inputFrame,contours);
 
+
+            //Put all frame to an array for show in Intermediate step windows
             arrayFrame[0] = &bgMOG2Img;
             arrayFrame[1] = &fgMOG2MaskImg;
             arrayFrame[2] = &fgMOG2Img;
             arrayFrame[3] = &contoursImg;
 
+
+            //Show window part
             imshow(INTERESTED_IMG,InterestedImg);
-
             rectangle(frame, InterestedArea, Scalar(200,255,145), 1, 8, 0);
-            imshow(MAIN_WINDOW, frame);
-            
-
-            
+            imshow(MAIN_WINDOW, frame);           
         }
 
         displaySelection(arrayFrame);
@@ -172,36 +175,31 @@ void initial()
 
 void showContours(Mat frame, vector< vector<Point> > contours)
 {
-    int i;
+    
     int biggestID = -1;
     int biggestArea = -1;
-    
+    double objectArea;
+
+
+    //Find the biggest object in the screen, and within the specific range
+    int i;
     for(i=0;i<contours.size();i++)
     {
         // To ensure the object in the specfic area
-        double objectArea = contourArea(contours[i], false);
+        objectArea = contourArea(contours[i], false);
         
-        if(objectArea > biggestArea && objectArea < limit)
+        if(objectArea > biggestArea && objectArea < upperLimit)
         {
             int j;
             int minimunX = windowWidth;
             int maximumY = 0;
-            for (j=0;j<contours[i].size();j++)
-            {
-                if(contours[i][j].x < minimunX)
-                {
-                    minimunX = contours[i][j].x;
-                }
-                if(contours[i][j].y > maximumY)
-                {
-                    maximumY = contours[i][j].y;
-                }
-            }
             biggestArea = objectArea;
             biggestID = i;
         }
     }
-    if(biggestArea != -1 && biggestArea > 1000)
+
+
+    if(biggestArea != -1 && biggestArea > lowerLimit)
     {
         cout << "Substracted Object Area: " << biggestArea << endl;
     }
@@ -210,16 +208,19 @@ void showContours(Mat frame, vector< vector<Point> > contours)
         cout << "Substracted Object Area: No object substracted" << endl;
     }
     
-    if(biggestID != -1 && biggestArea > 1000)
+
+    if(biggestID != -1 && biggestArea > lowerLimit)
     {
         Rect bounding_rect = boundingRect(contours[biggestID]);
-        double objectArea = contourArea(contours[biggestID], false);
+        cout << "width: " << bounding_rect.width << " height: " << bounding_rect.height << endl;
+        objectArea = contourArea(contours[biggestID], false);
+        cout << "Object Area: " << objectArea << endl;
 
         Mat subImg(frame,bounding_rect);
         resize(subImg,subImg,Size(16*20,9*20));
         imshow(SUB_IMG,subImg);
 
-        if(objectArea > large && objectArea < limit)
+        if(objectArea > large && objectArea < upperLimit)
         {
             rectangle(frame, bounding_rect, Scalar(0,0,255), 1, 8, 0);
             //Red
@@ -239,26 +240,7 @@ void showContours(Mat frame, vector< vector<Point> > contours)
             rectangle(frame, bounding_rect, Scalar(255,0,255), 1, 8, 0);
             //Purple
         }
-
-        
     }
-        
-
-
-    // if(minimunX <= lineX + 30)
-    // {
-    //     Mat subImg(frame,bounding_rect);
-    //     resize(subImg,subImg,Size(16*20,9*20));
-    //     stringstream filename;
-    //     filename << "SubStracted/sub";
-    //     filename << SubStractedNum;
-    //     filename << ".jpg";
-    //     // string fileName = filename.str();
-    //     // fout << fileName << " 1 0 0 " << 16*20 << " " << 9*20 << endl;
-    //     // SubStractedNum++;
-    //     imwrite(filename.str(), subImg);
-    //     imshow(INTERESTED_IMG,subImg);
-    // }
 }
 
 void displaySelection(Mat* arrayFrame[4])
