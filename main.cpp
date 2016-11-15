@@ -3,7 +3,7 @@
 #include <typeinfo>
 #include <sstream>
 #include <fstream>
-#include "func.cpp"
+// #include "function.h"
 
 #include <opencv2/opencv.hpp>
 #include "opencv2/highgui/highgui.hpp"
@@ -63,8 +63,6 @@ void displaySelection(Mat* arrayFrame[4]);
 int main(int argc, char** argv)
 {
     initial();
-    test();
-    
     VideoCapture cap(input_name);
     
     // Origin image, black-white image, substracted image, background image, edge detection image
@@ -78,7 +76,6 @@ int main(int argc, char** argv)
     //Parameter in the global variable
     Ptr<BackgroundSubtractor> pMOG2;
     pMOG2 = createBackgroundSubtractorMOG2(history, varThreshold, detectShadows);
-    
     
     
     
