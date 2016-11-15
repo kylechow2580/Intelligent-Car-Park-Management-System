@@ -3,6 +3,7 @@
 #include <typeinfo>
 #include <sstream>
 #include <fstream>
+#include "func.cpp"
 
 #include <opencv2/opencv.hpp>
 #include "opencv2/highgui/highgui.hpp"
@@ -55,13 +56,14 @@ int SubStractedNum = 1;
 
 
 void initial(); //Function to intialize the windows postion and setting
-void showContours(Mat frame, vector< vector<Point> > contours); // Show contours in main window
+int showContours(Mat frame, vector< vector<Point> > contours); // Show contours in main window and return Object Area
 void displaySelection(Mat* arrayFrame[4]);
 
 
 int main(int argc, char** argv)
 {
     initial();
+    test();
     
     VideoCapture cap(input_name);
     
@@ -123,7 +125,18 @@ int main(int argc, char** argv)
             // Find the contours in the image
             contoursImg = fgMOG2MaskImg.clone();
             findContours(contoursImg, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);        
-            showContours(inputFrame,contours);
+            int objectArea = showContours(inputFrame,contours);
+
+
+            //Cout the area to the console
+            if(objectArea != -1)
+            {
+                cout << "Subtracted object Area = " << objectArea << endl;
+            }
+            else
+            {
+                cout << "No Object Substracted now." << endl;
+            }
 
 
             //Put all frame to an array for show in Intermediate step windows
@@ -173,7 +186,7 @@ void initial()
     moveWindow(SUB_IMG, 800, 600);
 }
 
-void showContours(Mat frame, vector< vector<Point> > contours)
+int showContours(Mat frame, vector< vector<Point> > contours)
 {
     
     int biggestID = -1;
@@ -199,22 +212,10 @@ void showContours(Mat frame, vector< vector<Point> > contours)
     }
 
 
-    if(biggestArea != -1 && biggestArea > lowerLimit)
-    {
-        cout << "Substracted Object Area: " << biggestArea << endl;
-    }
-    else
-    {
-        cout << "Substracted Object Area: No object substracted" << endl;
-    }
-    
-
     if(biggestID != -1 && biggestArea > lowerLimit)
     {
         Rect bounding_rect = boundingRect(contours[biggestID]);
-        cout << "width: " << bounding_rect.width << " height: " << bounding_rect.height << endl;
         objectArea = contourArea(contours[biggestID], false);
-        cout << "Object Area: " << objectArea << endl;
 
         Mat subImg(frame,bounding_rect);
         resize(subImg,subImg,Size(16*20,9*20));
@@ -241,6 +242,11 @@ void showContours(Mat frame, vector< vector<Point> > contours)
             //Purple
         }
     }
+    else
+    {
+        objectArea = -1;
+    }
+    return objectArea;
 }
 
 void displaySelection(Mat* arrayFrame[4])
