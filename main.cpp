@@ -14,7 +14,8 @@ using namespace cv;
 string input_name = "Input/MOV_0002.mp4";
 string MAIN_WINDOW = "Main Output";
 string INTERMEDIATE_WINDOW = "Intermediate Step";
-string SUBSTRACTED_IMG = "Interested Area Image";
+string INTERESTED_IMG = "Interested Area Image";
+string SUB_IMG = "SubStracted Image";
 
 //Windows parameter
 ofstream fout;
@@ -29,9 +30,9 @@ int fullview = 0;
 
 //Object Size retangle
 int limit = 70000;
-int large = 10000;
-int middle = 5000;
-int small = 2000;
+int large = 60000;
+int middle = 40000;
+int small = 20000;
 
 //Interested Area
 Rect InterestedArea(10,100,500,250);
@@ -63,9 +64,6 @@ int main(int argc, char** argv)
     Mat frame, bgMOG2Img, fgMOG2MaskImg, fgMOG2Img, contoursImg;
     Mat* arrayFrame[4];
     
-
-
-
     //The value between 0 and 1 that indicates how fast the background model is learnt.
     //Negative parameter value makes the algorithm to use some automatically chosen learning rate.
     //0 means that the background model is not updated at all,
@@ -95,7 +93,7 @@ int main(int argc, char** argv)
 
 
             resize(frame,frame,size);
-            Mat subImg(frame,InterestedArea);
+            Mat InterestedImg(frame,InterestedArea);
             
             
             
@@ -106,7 +104,7 @@ int main(int argc, char** argv)
             }
             else
             {
-                inputFrame = subImg;
+                inputFrame = InterestedImg;
             }
             
 
@@ -129,13 +127,15 @@ int main(int argc, char** argv)
             arrayFrame[2] = &fgMOG2Img;
             arrayFrame[3] = &contoursImg;
 
+            imshow(INTERESTED_IMG,InterestedImg);
 
-            rectangle(frame, InterestedArea, Scalar(200,255,145), 3, 8, 0);
+            rectangle(frame, InterestedArea, Scalar(200,255,145), 1, 8, 0);
             imshow(MAIN_WINDOW, frame);
-            imshow(SUBSTRACTED_IMG,subImg);
+            
 
             
         }
+
         displaySelection(arrayFrame);
 
         if((key=waitKey(1))==27) 
@@ -162,8 +162,12 @@ void initial()
     moveWindow(INTERMEDIATE_WINDOW, windowWidth+60, 0);
 
     //Interested Area Windows
-    namedWindow(SUBSTRACTED_IMG, 1);
-    moveWindow(SUBSTRACTED_IMG, 0, 600);
+    namedWindow(INTERESTED_IMG, 1);
+    moveWindow(INTERESTED_IMG, 0, 600);
+
+    //Substracted Area Windows
+    namedWindow(SUB_IMG, 1);
+    moveWindow(SUB_IMG, 800, 600);
 }
 
 void showContours(Mat frame, vector< vector<Point> > contours)
@@ -198,30 +202,38 @@ void showContours(Mat frame, vector< vector<Point> > contours)
         }
     }
 
-    cout << "biggestID: " << biggestID << " area: " << biggestArea << endl;
+    cout << "Substracted Object Area: " << biggestArea << endl;
     if(biggestID != -1)
     {
         Rect bounding_rect = boundingRect(contours[biggestID]);
         double objectArea = contourArea(contours[biggestID], false);
+
+        Mat subImg(frame,bounding_rect);
+        resize(subImg,subImg,Size(16*20,9*20));
+        imshow(SUB_IMG,subImg);
+        
         if(objectArea > large && objectArea < limit)
         {
             rectangle(frame, bounding_rect, Scalar(0,0,255), 1, 8, 0);
             //Red
         }
-        else if(objectArea > small && objectArea < middle)
+        else if(objectArea > middle && objectArea < large)
         {
             rectangle(frame, bounding_rect, Scalar(255,0,0), 1, 8, 0);
             //Blue
         }
-        else if(objectArea > 1000 && objectArea < small)
+        else if(objectArea > small && objectArea < middle)
         {
             rectangle(frame, bounding_rect, Scalar(0,255,0), 1, 8, 0);
             //Green
         }
+        else if(objectArea > 1000 && objectArea < small)
+        {
+            rectangle(frame, bounding_rect, Scalar(255,0,255), 1, 8, 0);
+            //Purple
+        }
 
-        // Mat subImg(frame,bounding_rect);
-        // resize(subImg,subImg,Size(16*20,9*20));
-        // imshow(SUBSTRACTED_IMG,subImg);
+        
     }
         
 
@@ -238,7 +250,7 @@ void showContours(Mat frame, vector< vector<Point> > contours)
     //     // fout << fileName << " 1 0 0 " << 16*20 << " " << 9*20 << endl;
     //     // SubStractedNum++;
     //     imwrite(filename.str(), subImg);
-    //     imshow(SUBSTRACTED_IMG,subImg);
+    //     imshow(INTERESTED_IMG,subImg);
     // }
 }
 
