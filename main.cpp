@@ -174,7 +174,7 @@ void showContours(Mat frame, vector< vector<Point> > contours)
 {
     int i;
     int biggestID = -1;
-    int biggestArea = 1000;
+    int biggestArea = -1;
     
     for(i=0;i<contours.size();i++)
     {
@@ -201,9 +201,16 @@ void showContours(Mat frame, vector< vector<Point> > contours)
             biggestID = i;
         }
     }
-
-    cout << "Substracted Object Area: " << biggestArea << endl;
-    if(biggestID != -1)
+    if(biggestArea != -1 && biggestArea > 1000)
+    {
+        cout << "Substracted Object Area: " << biggestArea << endl;
+    }
+    else
+    {
+        cout << "Substracted Object Area: No object substracted" << endl;
+    }
+    
+    if(biggestID != -1 && biggestArea > 1000)
     {
         Rect bounding_rect = boundingRect(contours[biggestID]);
         double objectArea = contourArea(contours[biggestID], false);
@@ -211,7 +218,7 @@ void showContours(Mat frame, vector< vector<Point> > contours)
         Mat subImg(frame,bounding_rect);
         resize(subImg,subImg,Size(16*20,9*20));
         imshow(SUB_IMG,subImg);
-        
+
         if(objectArea > large && objectArea < limit)
         {
             rectangle(frame, bounding_rect, Scalar(0,0,255), 1, 8, 0);
