@@ -10,12 +10,11 @@
 using namespace std;
 using namespace cv;
 
-//0002 , 10, 260
 
 string input_name = "Input/MOV_0002.mp4";
 string MAIN_WINDOW = "Main Output";
 string INTERMEDIATE_WINDOW = "Intermediate Step";
-string SUBSTRACTED_IMG = "Sub Image";
+string SUBSTRACTED_IMG = "Interested Area Image";
 
 //Windows parameter
 ofstream fout;
@@ -26,14 +25,16 @@ int windowHeight = 9 * windowRatio;
 int pause = 0;
 int option = 2;
 int optionNum = 3;
+int fullview = 0;
 
 //Object Size retangle
+int limit = 70000;
 int large = 10000;
 int middle = 5000;
 int small = 2000;
 
 //Interested Area
-Rect InterestedArea(40,100,500,250);
+Rect InterestedArea(10,100,500,250);
 
 
 //Background substraction parameter
@@ -47,10 +48,10 @@ int SubStractedNum = 1;
 Size size(windowWidth,windowHeight);
 
 
-
-
 void initial(); //Function to intialize the windows postion and setting
 void showContours(Mat frame, vector< vector<Point> > contours); // Show contours in main window
+void displaySelection(Mat* arrayFrame[4]);
+
 
 int main(int argc, char** argv)
 {
@@ -58,17 +59,22 @@ int main(int argc, char** argv)
     
     VideoCapture cap(input_name);
     
-    fout.open("SubStracted/data.info");
+    // Origin image, black-white image, substracted image, background image, edge detection image
+    Mat frame, bgMOG2Img, fgMOG2MaskImg, fgMOG2Img, contoursImg;
+    Mat* arrayFrame[4];
     
-    Mat frame, fgMOG2MaskImg, fgMOG2Img, bgMOG2Img, contoursImg;
-    Ptr<BackgroundSubtractor> pMOG2;
 
-    pMOG2 = createBackgroundSubtractorMOG2(history, varThreshold, detectShadows);
-    
+
+
     //The value between 0 and 1 that indicates how fast the background model is learnt.
     //Negative parameter value makes the algorithm to use some automatically chosen learning rate.
     //0 means that the background model is not updated at all,
     //1 means that the background model is completely reinitialized from the last frame.
+    //Parameter in the global variable
+    Ptr<BackgroundSubtractor> pMOG2;
+    pMOG2 = createBackgroundSubtractorMOG2(history, varThreshold, detectShadows);
+    
+    
     
     
 
@@ -76,6 +82,8 @@ int main(int argc, char** argv)
     {
         vector< vector<Point> > contours;
         vector<Vec4i> hierarchy;
+        
+
         if(pause == 0)
         {
             cap >> frame;
@@ -84,47 +92,52 @@ int main(int argc, char** argv)
                 cout << "Video Ended." << endl;
                 break;
             }
+
+
             resize(frame,frame,size);
+            Mat subImg(frame,InterestedArea);
             
             
+            
+            Mat inputFrame;
+            if(fullview == 1)
+            {
+                inputFrame = frame;
+            }
+            else
+            {
+                inputFrame = subImg;
+            }
+            
+
+
             //update the model
-            pMOG2->apply(frame, fgMOG2MaskImg, learningRate ? -1 : 0);
+            pMOG2->apply(inputFrame, fgMOG2MaskImg, learningRate ? -1 : 0);
+
             
             fgMOG2Img = Scalar::all(0);
-            frame.copyTo(fgMOG2Img, fgMOG2MaskImg);
-            
+            inputFrame.copyTo(fgMOG2Img, fgMOG2MaskImg);          
             pMOG2->getBackgroundImage(bgMOG2Img);
 
             // Find the contours in the image
             contoursImg = fgMOG2MaskImg.clone();
             findContours(contoursImg, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);        
-            showContours(frame,contours);
-            
+            showContours(inputFrame,contours);
 
-            // line(frame, Point(lineX,0), Point(lineX,windowHeight), Scalar(255,155,128),2);
-            // line(frame, Point(0,lineY), Point(windowWidth,lineY), Scalar(255,155,128),2);
+            arrayFrame[0] = &bgMOG2Img;
+            arrayFrame[1] = &fgMOG2MaskImg;
+            arrayFrame[2] = &fgMOG2Img;
+            arrayFrame[3] = &contoursImg;
+
+
             rectangle(frame, InterestedArea, Scalar(200,255,145), 3, 8, 0);
             imshow(MAIN_WINDOW, frame);
-
-            Mat subImg(frame,InterestedArea);
             imshow(SUBSTRACTED_IMG,subImg);
+
+            
         }
-        switch(option)
-            {
-                case 0:
-                    if(!bgMOG2Img.empty())
-                        imshow(INTERMEDIATE_WINDOW, bgMOG2Img);
-                    break;
-                case 1:
-                    imshow(INTERMEDIATE_WINDOW, fgMOG2MaskImg);
-                    break;
-                case 2:
-                    imshow(INTERMEDIATE_WINDOW, fgMOG2Img);
-                    break;
-                case 3:
-                    imshow(INTERMEDIATE_WINDOW, contoursImg);
-                    break;
-            }
+        displaySelection(arrayFrame);
+
         if((key=waitKey(1))==27) 
         {
             cout << "Key \"Esc\" was pressed." << endl;
@@ -136,17 +149,19 @@ int main(int argc, char** argv)
 
 void initial()
 {
+    fout.open("SubStracted/data.info");
+
+    //Original Image Windows
     namedWindow(MAIN_WINDOW, WINDOW_AUTOSIZE );
     createTrackbar("Pause", MAIN_WINDOW, &pause, 1);
-    // createTrackbar("LineX", MAIN_WINDOW, &lineX, windowWidth);
-    // createTrackbar("LineY", MAIN_WINDOW, &lineY, windowHeight);
     moveWindow(MAIN_WINDOW, 0, 0);
     
-    
+    //Control Windows
     namedWindow(INTERMEDIATE_WINDOW, WINDOW_AUTOSIZE );
     createTrackbar("Option", INTERMEDIATE_WINDOW, &option, optionNum);
     moveWindow(INTERMEDIATE_WINDOW, windowWidth+60, 0);
 
+    //Interested Area Windows
     namedWindow(SUBSTRACTED_IMG, 1);
     moveWindow(SUBSTRACTED_IMG, 0, 600);
 }
@@ -162,7 +177,7 @@ void showContours(Mat frame, vector< vector<Point> > contours)
         // To ensure the object in the specfic area
         double objectArea = contourArea(contours[i], false);
         
-        if(objectArea > biggestArea)
+        if(objectArea > biggestArea && objectArea < limit)
         {
             int j;
             int minimunX = windowWidth;
@@ -181,10 +196,6 @@ void showContours(Mat frame, vector< vector<Point> > contours)
             biggestArea = objectArea;
             biggestID = i;
         }
-        else
-        {
-            continue;
-        }
     }
 
     cout << "biggestID: " << biggestID << " area: " << biggestArea << endl;
@@ -192,8 +203,7 @@ void showContours(Mat frame, vector< vector<Point> > contours)
     {
         Rect bounding_rect = boundingRect(contours[biggestID]);
         double objectArea = contourArea(contours[biggestID], false);
-        cout << objectArea << endl;
-        if(objectArea > large)
+        if(objectArea > large && objectArea < limit)
         {
             rectangle(frame, bounding_rect, Scalar(0,0,255), 1, 8, 0);
             //Red
@@ -214,7 +224,6 @@ void showContours(Mat frame, vector< vector<Point> > contours)
         // imshow(SUBSTRACTED_IMG,subImg);
     }
         
-    // drawContours(subImg, contours, i, Scalar(0,255,0));
 
 
     // if(minimunX <= lineX + 30)
@@ -231,4 +240,24 @@ void showContours(Mat frame, vector< vector<Point> > contours)
     //     imwrite(filename.str(), subImg);
     //     imshow(SUBSTRACTED_IMG,subImg);
     // }
+}
+
+void displaySelection(Mat* arrayFrame[4])
+{
+    switch(option)
+    {
+        case 0:
+            if(!arrayFrame[0]->empty())
+                imshow(INTERMEDIATE_WINDOW, *arrayFrame[0]);
+            break;
+        case 1:
+            imshow(INTERMEDIATE_WINDOW, *arrayFrame[1]);
+            break;
+        case 2:
+            imshow(INTERMEDIATE_WINDOW, *arrayFrame[2]);
+            break;
+        case 3:
+            imshow(INTERMEDIATE_WINDOW, *arrayFrame[3]);
+            break;
+    }
 }
