@@ -3,7 +3,7 @@
 #include <typeinfo>
 #include <sstream>
 #include <fstream>
-// #include "function.h"
+#include "function.h"
 
 #include <opencv2/opencv.hpp>
 #include "opencv2/highgui/highgui.hpp"
@@ -63,6 +63,7 @@ void displaySelection(Mat* arrayFrame[4]);
 int main(int argc, char** argv)
 {
     initial();
+    test();
     VideoCapture cap(input_name);
     
     // Origin image, black-white image, substracted image, background image, edge detection image
