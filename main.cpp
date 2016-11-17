@@ -3,6 +3,7 @@
 #include <typeinfo>
 #include <sstream>
 #include <fstream>
+#include <cmath>
 #include "function.h"
 
 #include <opencv2/opencv.hpp>
@@ -12,7 +13,12 @@ using namespace std;
 using namespace cv;
 
 
-string input_name = "Input/MOV_0002.mp4";
+string folder = "Input/";
+string videoname = "CC_Hall_1";
+string input_name = folder + videoname + ".mp4";
+
+
+//Window Name
 string MAIN_WINDOW = "Main Output";
 string INTERMEDIATE_WINDOW = "Intermediate Step";
 string INTERESTED_IMG = "Interested Area Image";
@@ -31,7 +37,8 @@ int fullview = 0;
 
 
 //Object Record
-int frameObjectArea[10];
+const int HISTORY_FRAME = 30;
+int frameObjectArea[HISTORY_FRAME];
 
 //Object Size retangle
 int upperLimit = 70000;
@@ -41,7 +48,7 @@ int small = 20000;
 int lowerLimit = 10000;
 
 //Interested Area
-Rect InterestedArea(10,100,500,250);
+Rect InterestedArea(0,0,0,0);
 
 
 //Background substraction parameter
@@ -57,15 +64,17 @@ int SubStractedNum = 1;
 
 void initial(); //Function to intialize the windows postion and setting
 int showContours(Mat frame, vector< vector<Point> > contours); // Show contours in main window and return Object Area
-void displaySelection(Mat* arrayFrame[4]);
+void displaySelection(Mat* arrayFrame[4]); //For display selection in intermediate step window
 
 
 int main(int argc, char** argv)
 {
     initial();
     test();
+    int frameCount = 0;
     VideoCapture cap(input_name);
     
+
     // Origin image, black-white image, substracted image, background image, edge detection image
     Mat frame, bgMOG2Img, fgMOG2MaskImg, fgMOG2Img, contoursImg;
     Mat* arrayFrame[4];
@@ -77,7 +86,6 @@ int main(int argc, char** argv)
     //Parameter in the global variable
     Ptr<BackgroundSubtractor> pMOG2;
     pMOG2 = createBackgroundSubtractorMOG2(history, varThreshold, detectShadows);
-    
     
     
 
@@ -124,17 +132,10 @@ int main(int argc, char** argv)
             contoursImg = fgMOG2MaskImg.clone();
             findContours(contoursImg, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);        
             int objectArea = showContours(inputFrame,contours);
+            frameObjectArea[frameCount] = objectArea;
 
-
-            //Cout the area to the console
-            if(objectArea != -1)
-            {
-                cout << "Subtracted object Area = " << objectArea << endl;
-            }
-            else
-            {
-                cout << "No Object Substracted now." << endl;
-            }
+            // Determine the state of car
+            stableDetection(frameObjectArea,HISTORY_FRAME,objectArea);
 
 
             //Put all frame to an array for show in Intermediate step windows
@@ -157,6 +158,17 @@ int main(int argc, char** argv)
             cout << "Key \"Esc\" was pressed." << endl;
             break;
         }
+
+
+        if(frameCount != HISTORY_FRAME -1)
+        {
+            frameCount++;
+        }   
+        else
+        {
+            frameCount = 0;
+        }
+
     }
     return 0;
 }
@@ -164,6 +176,16 @@ int main(int argc, char** argv)
 void initial()
 {
     fout.open("SubStracted/data.info");
+    int* record = ReadIAParameter(videoname);
+    InterestedArea.x = record[0];
+    InterestedArea.y = record[1];
+    InterestedArea.width = record[2];
+    InterestedArea.height = record[3];
+
+    for(int i=0;i<HISTORY_FRAME;i++)
+    {
+        frameObjectArea[i] = -1;
+    }
 
     //Original Image Windows
     namedWindow(MAIN_WINDOW, WINDOW_AUTOSIZE );
@@ -193,15 +215,13 @@ int showContours(Mat frame, vector< vector<Point> > contours)
 
 
     //Find the biggest object in the screen, and within the specific range
-    int i;
-    for(i=0;i<contours.size();i++)
+    for(int i=0;i<contours.size();i++)
     {
         // To ensure the object in the specfic area
         objectArea = contourArea(contours[i], false);
         
         if(objectArea > biggestArea && objectArea < upperLimit)
         {
-            int j;
             int minimunX = windowWidth;
             int maximumY = 0;
             biggestArea = objectArea;
