@@ -13,8 +13,11 @@ using namespace std;
 using namespace cv;
 
 
+//CUHK_Normal_1.mp4
+//CUHK_Normal_1_i.mov
+//CUHK_Normal_2_i.mov
 string folder = "Input/";
-string videoname = "CC_Hall_1";
+string videoname = "CUHK_Normal_1";
 string input_name = folder + videoname + ".mp4";
 
 
@@ -39,13 +42,16 @@ int fullview = 0;
 //Object Record
 const int HISTORY_FRAME = 30;
 int frameObjectArea[HISTORY_FRAME];
+int abnormalFrameDifferent;
+int stableConstant;
+
 
 //Object Size retangle
-int upperLimit = 70000;
-int large = 60000;
-int middle = 40000;
-int small = 20000;
-int lowerLimit = 10000;
+int upperLimit;
+int large;
+int middle;
+int small;
+int lowerLimit;
 
 //Interested Area
 Rect InterestedArea(0,0,0,0);
@@ -53,9 +59,9 @@ Rect InterestedArea(0,0,0,0);
 
 //Background substraction parameter
 int history = 500;
-double varThreshold = 255;
+double varThreshold = 80;
 bool detectShadows = true;
-bool learningRate = false;
+bool learningRate;
 
 
 // File output parameter
@@ -135,7 +141,7 @@ int main(int argc, char** argv)
             frameObjectArea[frameCount] = objectArea;
 
             // Determine the state of car
-            stableDetection(frameObjectArea,HISTORY_FRAME,objectArea);
+            stableDetection(frameObjectArea,HISTORY_FRAME,objectArea,abnormalFrameDifferent,stableConstant);
 
 
             //Put all frame to an array for show in Intermediate step windows
@@ -176,11 +182,24 @@ int main(int argc, char** argv)
 void initial()
 {
     fout.open("SubStracted/data.info");
-    int* record = ReadIAParameter(videoname);
-    InterestedArea.x = record[0];
-    InterestedArea.y = record[1];
-    InterestedArea.width = record[2];
-    InterestedArea.height = record[3];
+    int* record = ReadParameter(videoname);
+    learningRate = record[0];
+    InterestedArea.x = record[1];
+    InterestedArea.y = record[2];
+    InterestedArea.width = record[3];
+    InterestedArea.height = record[4];
+    upperLimit = record[5];
+    large = record[6];
+    middle = record[7];
+    small = record[8];
+    lowerLimit = record[9];
+    abnormalFrameDifferent = record[10];
+    stableConstant = record[11];
+
+    cout << "learningRate: " << learningRate << endl;
+
+
+
 
     for(int i=0;i<HISTORY_FRAME;i++)
     {
@@ -213,14 +232,12 @@ int showContours(Mat frame, vector< vector<Point> > contours)
     int biggestArea = -1;
     double objectArea;
 
-
     //Find the biggest object in the screen, and within the specific range
     for(int i=0;i<contours.size();i++)
     {
         // To ensure the object in the specfic area
         objectArea = contourArea(contours[i], false);
-        
-        if(objectArea > biggestArea && objectArea < upperLimit)
+        if(objectArea > biggestArea && objectArea > lowerLimit && objectArea < upperLimit)
         {
             int minimunX = windowWidth;
             int maximumY = 0;
@@ -229,15 +246,14 @@ int showContours(Mat frame, vector< vector<Point> > contours)
         }
     }
 
-
     if(biggestID != -1 && biggestArea > lowerLimit)
     {
         Rect bounding_rect = boundingRect(contours[biggestID]);
         objectArea = contourArea(contours[biggestID], false);
 
-        Mat subImg(frame,bounding_rect);
-        resize(subImg,subImg,Size(16*20,9*20));
-        imshow(SUB_IMG,subImg);
+        // Mat subImg(frame,bounding_rect);
+        // resize(subImg,subImg,Size(16*20,9*20));
+        // imshow(SUB_IMG,subImg);
 
         if(objectArea > large && objectArea < upperLimit)
         {

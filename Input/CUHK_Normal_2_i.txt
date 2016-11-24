@@ -1,0 +1,2 @@
+//learning rate, IAx , IAy, IAwidth, IAheight, upperlimit, large, middle, small, lowerlimit, abnormalFrameDifferent, stableConstant
+0 20 0 600 360 300000 100000 50000 10000 5000 4000 1500

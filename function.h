@@ -6,7 +6,7 @@ using namespace std;
 #define FUNCTION_H
 
 void test();
-int* ReadIAParameter(string videoname);
-bool stableDetection(int frameArray[], const int length, int objectArea);
+int* ReadParameter(string videoname);
+bool stableDetection(int frameArray[], const int length, int objectArea, int abnormalFrameDifferent, int stableConstant);
 
 #endif
