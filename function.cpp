@@ -52,10 +52,10 @@ int findIgnore(int* frameArray, int* sortedArray, int length, int& sumArea)
     	if(j<10)
     		cout << "0";
     	cout << j << "]: " << frameArray[j];
-		cout << "   Sorted Array[";
-		if(j<10)
-			cout << "0";
-		cout << j << "]: " << sortedArray[j];
+		// cout << "   Sorted Array[";
+		// if(j<10)
+		// 	cout << "0";
+		// cout << j << "]: " << sortedArray[j];
         if(sortedArray[j] != -1)
         {
             if(j<length-1 && sortedArray[j+1] - sortedArray[j] > abs(AFD))

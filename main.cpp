@@ -12,12 +12,17 @@
 using namespace std;
 using namespace cv;
 
+//CC_Hall_2.mp4 threshold:80, big car, unstable sun light (Unstable sun ling)
+//CUHK_Entry1_Rain.mp4 threshold:127, learning rate, no learning rate
 
-//CUHK_Normal_1.mp4
-//CUHK_Normal_1_i.mov
-//CUHK_Normal_2_i.mov
+//CUHK_Entry2_Rain.mp4 learning rate, no learning rate (motion blur)
+
+//CC_Hall_1.mp4(Yes learning rate), CUHK_Entry1_Rain.mp4(no learning rate) threshold: 80, (distance)
+
+
+
 string folder = "Input/";
-string videoname = "CUHK_Normal_1";
+string videoname = "CUHK_Entry2_Rain";
 string input_name = folder + videoname + ".mp4";
 
 
@@ -34,7 +39,7 @@ int windowRatio = 40;
 int windowWidth = 16 * windowRatio;
 int windowHeight = 9 * windowRatio;
 int pause = 0;
-int option = 2;
+int option = 1;
 int optionNum = 3;
 int fullview = 0;
 
@@ -59,7 +64,7 @@ Rect InterestedArea(0,0,0,0);
 
 //Background substraction parameter
 int history = 500;
-double varThreshold = 80;
+double varThreshold = 127;
 bool detectShadows = true;
 bool learningRate;
 
@@ -181,7 +186,7 @@ int main(int argc, char** argv)
 
 void initial()
 {
-    fout.open("SubStracted/data.info");
+    // fout.open("SubStracted/data.info");
     int* record = ReadParameter(videoname);
     learningRate = record[0];
     InterestedArea.x = record[1];
@@ -221,8 +226,8 @@ void initial()
     moveWindow(INTERESTED_IMG, 0, 600);
 
     //Substracted Area Windows
-    namedWindow(SUB_IMG, 1);
-    moveWindow(SUB_IMG, 800, 600);
+    // namedWindow(SUB_IMG, 1);
+    // moveWindow(SUB_IMG, 800, 600);
 }
 
 int showContours(Mat frame, vector< vector<Point> > contours)
